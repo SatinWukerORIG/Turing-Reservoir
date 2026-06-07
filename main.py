@@ -1,0 +1,138 @@
+import numpy as np
+import os
+import training_generator
+
+class Reservoir:
+
+    def __init__(
+        self,
+        input_size=3,
+        reservoir_size=100,
+        spectral_radius=0.9,
+        input_scale=1.0,
+    ):
+
+        self.input_size = input_size
+        self.reservoir_size = reservoir_size
+
+        # Input weights
+        self.Win = (
+            np.random.randn(reservoir_size, input_size)
+            * input_scale
+        )
+
+        # Recurrent weights
+        self.W = np.random.randn(
+            reservoir_size,
+            reservoir_size
+        )
+
+        # Scale spectral radius
+        eigvals = np.linalg.eigvals(self.W)
+
+        current_radius = np.max(np.abs(eigvals))
+
+        self.W *= spectral_radius / current_radius
+
+        # Initial state
+        self.state = np.zeros((reservoir_size, 1))
+
+    def reset(self):
+        self.state[:] = 0
+
+    def load_weights(self, model_dir="saved_reservoir"):
+        """Load saved reservoir weights from disk."""
+        self.Win = np.load(os.path.join(model_dir, "Win.npy"))
+        self.W = np.load(os.path.join(model_dir, "W.npy"))
+        self.reservoir_size = self.W.shape[0]
+        self.input_size = self.Win.shape[1]
+        self.reset()
+
+    def step(self, u):
+        """
+        u shape = (input_size,)
+        """
+
+        u = u.reshape(-1, 1)
+
+        self.state = np.tanh(
+            self.W @ self.state +
+            self.Win @ u
+        )
+
+        return self.state
+    
+    def run_sequence(self, commands):
+
+        states = []
+
+        self.reset()
+
+        for cmd in commands:
+
+            state = self.step(cmd)
+
+            states.append(state.flatten())
+
+        return np.array(states)
+
+
+def extract_examples(reservoir, commands_list, labels_list):
+    X = []
+    Y = []
+    for commands, labels in zip(commands_list, labels_list):
+
+        states = reservoir.run_sequence(commands)
+
+        for state, label in zip(states, labels):
+
+            if label != -1:
+
+                X.append(state)
+                Y.append(label)
+
+    return np.array(X), np.array(Y)
+
+def train_readout(X, Y):
+    Wout = np.linalg.lstsq(X, Y, rcond=None)[0]
+    return Wout
+
+def predict(X, Wout):
+    scores = X @ Wout
+    predictions = (scores > 0.5).astype(int)
+    return predictions
+
+
+def predict_sequence(reservoir, commands, Wout):
+    """Run one command sequence through the reservoir and return one label list."""
+    states = reservoir.run_sequence(commands)
+    predictions = predict(states, Wout)
+    return predictions.flatten()
+
+
+if __name__ == "__main__":
+    train_commands, train_labels = training_generator.load_data(5000)
+    reservoir = Reservoir()
+
+    X_train, Y_train = extract_examples(reservoir, train_commands, train_labels)
+
+    print(X_train.shape, Y_train.shape)
+
+    Wout = train_readout(X_train, Y_train)
+
+    predictions = predict(X_train, Wout)
+
+
+    accuracy = np.mean(predictions == Y_train)
+    print("Accuracy:", accuracy)
+
+
+
+    # Save the reservoir and readout weights after training
+    model_dir = "saved_reservoir"
+    os.makedirs(model_dir, exist_ok=True)
+    np.save(os.path.join(model_dir, "Win.npy"), reservoir.Win)
+    np.save(os.path.join(model_dir, "W.npy"), reservoir.W)
+    np.save(os.path.join(model_dir, "Wout.npy"), Wout)
+    print(f"Weights saved to {model_dir}/")
+
