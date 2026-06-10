@@ -19,18 +19,5 @@ print(X_test.shape, Y_test.shape)
 
 Wout = np.load(os.path.join("saved_reservoir", "Wout.npy"))
 
-# predictions = main.predict(X_test, Wout)
-# accuracy = np.mean(predictions == Y_test)
 
-# print(f"Test examples: {X_test.shape[0]}")
-# print(f"Accuracy: {accuracy:.4f}")
-
-for commands, labels in zip(test_commands[:5], test_labels[:5]):
-    readable_commands = training_generator.commands_to_words(commands)
-    predicted_labels = main.predict_sequence(reservoir, commands, Wout)
-
-    print("Commands:    ", readable_commands)
-    print("True labels: ", labels.tolist())
-    print("Predictions: ", predicted_labels.tolist())
-    print()
-
+training_generator.get_accuracy(test_commands, test_labels, reservoir, Wout, debug=True)

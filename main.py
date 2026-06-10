@@ -86,10 +86,8 @@ def extract_examples(reservoir, commands_list, labels_list):
 
         for state, label in zip(states, labels):
 
-            if label != -1:
-
-                X.append(state)
-                Y.append(label)
+            X.append(state)
+            Y.append(label)
 
     return np.array(X), np.array(Y)
 
@@ -99,8 +97,11 @@ def train_readout(X, Y):
 
 def predict(X, Wout):
     scores = X @ Wout
-    predictions = (scores > 0.5).astype(int)
-    return predictions
+
+    # Pick the highest-scoring class index
+    class_indices = np.argmax(scores, axis=1)
+
+    return class_indices
 
 
 def predict_sequence(reservoir, commands, Wout):
@@ -111,7 +112,7 @@ def predict_sequence(reservoir, commands, Wout):
 
 
 if __name__ == "__main__":
-    train_commands, train_labels = training_generator.load_data(5000)
+    train_commands, train_labels = training_generator.load_data(5000, min_length=10, max_length=20)
     reservoir = Reservoir()
 
     X_train, Y_train = extract_examples(reservoir, train_commands, train_labels)
@@ -122,10 +123,13 @@ if __name__ == "__main__":
 
     predictions = predict(X_train, Wout)
 
+    predictions = training_generator.predictions_to_labels(predictions)
 
-    accuracy = np.mean(predictions == Y_train)
-    print("Accuracy:", accuracy)
+    # What does it do?
+    # accuracy = np.mean(predictions == Y_train)
+    # print("Accuracy:", accuracy)
 
+    training_generator.get_accuracy(train_commands, train_labels, reservoir, Wout)
 
 
     # Save the reservoir and readout weights after training
