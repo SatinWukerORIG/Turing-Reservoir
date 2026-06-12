@@ -26,7 +26,7 @@ MAP_LABEL = {
 ALL_COMMANDS = [WRITE_0, WRITE_1, READ, MOVE_LEFT, MOVE_RIGHT, NOP]
 
 
-def simulate_tape_command(cmd, tape, tape_idx) -> NDArray:
+def simulate_tape_command(cmd, tape, tape_idx) -> tuple[NDArray, int]:
     """
     Simulate a single Turing machine command on the tape and return the
     corresponding supervision label.
@@ -37,20 +37,21 @@ def simulate_tape_command(cmd, tape, tape_idx) -> NDArray:
         tape_idx: Current position of the tape head.
 
     Returns:
-        A one-hot label vector indicating the expected output for this step.
-        For WRITE and MOVE commands the label is LABEL_EMPTY. For READ, the
-        label reports the bit under the tape head as LABEL_READ_0 or LABEL_READ_1.
+        A tuple of (label, updated_tape_idx).
+        The label is a one-hot vector. For WRITE and MOVE commands the label
+        is LABEL_EMPTY. For READ, the label reports the bit under the tape head
+        as LABEL_READ_0 or LABEL_READ_1.
     """
     if np.array_equal(cmd, WRITE_0):
         tape[tape_idx] = 0
-        return LABEL_EMPTY
+        return LABEL_EMPTY, tape_idx
 
     elif np.array_equal(cmd, WRITE_1):
         tape[tape_idx] = 1
-        return LABEL_EMPTY
+        return LABEL_EMPTY, tape_idx
 
     elif np.array_equal(cmd, READ):
-        return MAP_LABEL[tape[tape_idx]]
+        return MAP_LABEL[tape[tape_idx]], tape_idx
 
     elif np.array_equal(cmd, MOVE_LEFT):
         tape_idx -= 1
@@ -58,19 +59,19 @@ def simulate_tape_command(cmd, tape, tape_idx) -> NDArray:
             tape_idx = 0
             tape.insert(0, 0)  # Extend tape to the left with a blank cell
 
-        return LABEL_EMPTY
+        return LABEL_EMPTY, tape_idx
 
     elif np.array_equal(cmd, MOVE_RIGHT):
         tape_idx += 1
         if tape_idx >= len(tape):
             tape.append(0)  # Extend tape to the right with a blank cell
 
-        return LABEL_EMPTY
+        return LABEL_EMPTY, tape_idx
 
     elif np.array_equal(cmd, NOP):
-        return LABEL_EMPTY
+        return LABEL_EMPTY, tape_idx
 
-    return None
+    raise ValueError("Unknown command vector")
 
 def generate_sequence(min_length=2, max_length=10):
     """
@@ -100,7 +101,8 @@ def generate_sequence(min_length=2, max_length=10):
         cmd = random.choice(ALL_COMMANDS)
         commands.append(cmd)
 
-        labels.append(simulate_tape_command(cmd, tape, tape_idx))
+        label, tape_idx = simulate_tape_command(cmd, tape, tape_idx)
+        labels.append(label)
 
     # Ensure at least one READ exists
     if not any(np.array_equal(cmd, READ) for cmd in commands):
@@ -115,7 +117,8 @@ def generate_sequence(min_length=2, max_length=10):
 
         for cmd in commands:
 
-            labels.append(simulate_tape_command(cmd, tape, tape_idx))
+            label, tape_idx = simulate_tape_command(cmd, tape, tape_idx)
+            labels.append(label)
 
     return np.array(commands), np.array(labels)
 
@@ -126,7 +129,7 @@ def labels_to_indices(label_vectors) -> NDArray:
     back to their readable indices: -1 (empty), 0, or 1.
 
     Args:
-        label_vectors: array-like of shape (N, 5) or (5,) containing one-hot label vectors.
+        label_vectors: array-like of shape (N, 3) or (3,) containing one-hot label vectors.
 
     Returns:
         numpy.ndarray of shape (N,) with values in {-1, 0, 1}.
@@ -141,10 +144,7 @@ def labels_to_indices(label_vectors) -> NDArray:
         # choose nearest known label by L2 distance
         dists = [np.linalg.norm(v - k) for k in known]
         k = int(np.argmin(dists))
-        if k == 0:
-            result.append(-1)
-        else:
-            result.append(k - 1)
+        result.append(-1 if k == 0 else k - 1)
 
     return np.array(result, dtype=int)
 
