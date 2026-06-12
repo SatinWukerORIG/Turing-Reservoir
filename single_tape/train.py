@@ -1,6 +1,10 @@
-import numpy as np
 import os
+
+import numpy as np
+
 import training_generator
+
+MODEL_DIR = "saved_reservoir"
 
 class Reservoir:
 
@@ -133,10 +137,10 @@ if __name__ == "__main__":
 
 
     # Save the reservoir and readout weights after training
-    model_dir = "saved_reservoir"
-    os.makedirs(model_dir, exist_ok=True)
-    np.save(os.path.join(model_dir, "Win.npy"), reservoir.Win)
-    np.save(os.path.join(model_dir, "W.npy"), reservoir.W)
-    np.save(os.path.join(model_dir, "Wout.npy"), Wout)
-    print(f"Weights saved to {model_dir}/")
+    
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    np.save(os.path.join(MODEL_DIR, "Win.npy"), reservoir.Win)
+    np.save(os.path.join(MODEL_DIR, "W.npy"), reservoir.W)
+    np.save(os.path.join(MODEL_DIR, "Wout.npy"), Wout)
+    print(f"Weights saved to {MODEL_DIR}/")
 

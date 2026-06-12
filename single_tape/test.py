@@ -1,15 +1,15 @@
 import os
 import numpy as np
 import training_generator
-import main
+import train
 
 test_commands, test_labels = training_generator.load_data(1000)
 
-reservoir = main.Reservoir()
-reservoir.load_weights("saved_reservoir")
+reservoir = train.Reservoir()
+reservoir.load_weights(train.MODEL_DIR)
 
 print(len(test_commands), len(test_labels))
-X_test, Y_test = main.extract_examples(
+X_test, Y_test = train.extract_examples(
     reservoir,
     test_commands,
     test_labels
@@ -17,7 +17,7 @@ X_test, Y_test = main.extract_examples(
 
 print(X_test.shape, Y_test.shape)
 
-Wout = np.load(os.path.join("saved_reservoir", "Wout.npy"))
+Wout = np.load(os.path.join(train.MODEL_DIR, "Wout.npy"))
 
 
 training_generator.get_accuracy(test_commands, test_labels, reservoir, Wout, debug=True)

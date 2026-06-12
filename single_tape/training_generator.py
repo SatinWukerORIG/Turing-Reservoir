@@ -1,6 +1,10 @@
-import main
-import numpy as np
 import random
+
+import numpy as np
+
+import train
+
+
 
 WRITE_0 = np.array([1, 0, 0], dtype=np.float32)
 WRITE_1 = np.array([0, 1, 0], dtype=np.float32)
@@ -134,7 +138,7 @@ def get_accuracy(test_commands, test_labels, reservoir, Wout, debug=False):
 
     for commands, labels in zip(test_commands, test_labels):
         readable_commands = commands_to_words(commands)
-        predicted_labels = main.predict_sequence(reservoir, commands, Wout)
+        predicted_labels = train.predict_sequence(reservoir, commands, Wout)
 
         predicted_labels = predictions_to_labels(predicted_labels)
 
