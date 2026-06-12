@@ -188,7 +188,7 @@ def load_data(num_sequences=1000, min_length=2, max_length=10):
     labels = []
 
     for _ in range(num_sequences):
-        cmd, lbl = generate_sequence(min_length=min_length, max_length=max_length)
+        cmd, lbl = generate_sequence(min_length, max_length)
         commands.append(cmd)
         labels.append(lbl)
 
@@ -200,20 +200,19 @@ def get_accuracy(test_commands, test_labels, reservoir, Wout, debug=False):
 
     for commands, labels in zip(test_commands, test_labels):
         readable_commands = commands_to_words(commands)
-        predicted_labels = train.predict_sequence(reservoir, commands, Wout)
 
-        predicted_labels = predictions_to_labels(predicted_labels)
+        # Model outputs use argmax over three scores, giving indices 0, 1, 2.
+        # Minus 1 to those indices when compared with predicted indices:-1, 0, 1
+        predicted_indices = train.predict_sequence(reservoir, commands, Wout) - 1
+        label_indices = labels_to_indices(labels)
 
-        if np.array_equal(predicted_labels, labels):
+        if np.array_equal(predicted_indices, label_indices):
             correct += 1
 
         else:
             if debug:
-                # Convert one-hot label vectors to readable indices (-1, 0, 1) for debugging
-                true_indices = labels_to_indices(labels)
-                predicted_indices = labels_to_indices(predicted_labels)
                 print("Commands:    ", readable_commands)
-                print("True labels: ", true_indices.tolist())
+                print("True labels: ", label_indices.tolist())
                 print("Predictions: ", predicted_indices.tolist())
 
     accuracy = correct / total
