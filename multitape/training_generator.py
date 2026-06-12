@@ -17,24 +17,11 @@ LABEL_EMPTY = np.array([1, 0, 0], dtype=np.float32)
 LABEL_READ_0 = np.array([0, 1, 0], dtype=np.float32)
 LABEL_READ_1 = np.array([0, 0, 1], dtype=np.float32)
 
-map_label = {
+MAP_LABEL = {
     -1: LABEL_EMPTY,
     0: LABEL_READ_0,
     1: LABEL_READ_1
 }
-
-def predictions_to_labels(predicted_indices):
-    """Convert raw prediction indices to one-hot label vectors."""
-
-    # Model outputs use argmax over three scores, giving indices 0, 1, 2.
-    predicted_indices = np.atleast_1d(predicted_indices)
-
-    # Those indices map to label keys -1, 0, 1 in map_label
-    # A lookup table in np array is faster than python dictionary lookup
-    lookup_table = np.array([map_label[-1], map_label[0], map_label[1]])
-
-    return lookup_table[predicted_indices]
-
 
 ALL_COMMANDS = [WRITE_0, WRITE_1, READ, MOVE_LEFT, MOVE_RIGHT, NOP]
 
@@ -63,7 +50,7 @@ def simulate_tape_command(cmd, tape, tape_idx) -> NDArray:
         return LABEL_EMPTY
 
     elif np.array_equal(cmd, READ):
-        return map_label[tape[tape_idx]]
+        return MAP_LABEL[tape[tape_idx]]
 
     elif np.array_equal(cmd, MOVE_LEFT):
         tape_idx -= 1

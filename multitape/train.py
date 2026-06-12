@@ -127,8 +127,6 @@ if __name__ == "__main__":
 
     predictions = predict(X_train, Wout)
 
-    predictions = training_generator.predictions_to_labels(predictions)
-
     # What does it do?
     # accuracy = np.mean(predictions == Y_train)
     # print("Accuracy:", accuracy)
@@ -137,7 +135,7 @@ if __name__ == "__main__":
 
 
     # Save the reservoir and readout weights after training
-    
+
     os.makedirs(MODEL_DIR, exist_ok=True)
     np.save(os.path.join(MODEL_DIR, "Win.npy"), reservoir.Win)
     np.save(os.path.join(MODEL_DIR, "W.npy"), reservoir.W)
