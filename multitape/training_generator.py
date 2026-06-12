@@ -13,9 +13,9 @@ MOVE_LEFT = np.array([0, 0, 0, 1, 0], dtype=np.float32)
 MOVE_RIGHT = np.array([0, 0, 0, 0, 1], dtype=np.float32)
 NOP   = np.array([0, 0, 0, 0, 0], dtype=np.float32)  # Distractor command
 
-LABEL_EMPTY = np.array([1, 0, 0, 0, 0], dtype=np.float32)
-LABEL_READ_0 = np.array([0, 1, 0, 0, 0], dtype=np.float32)
-LABEL_READ_1 = np.array([0, 0, 1, 0, 0], dtype=np.float32)
+LABEL_EMPTY = np.array([1, 0, 0], dtype=np.float32)
+LABEL_READ_0 = np.array([0, 1, 0], dtype=np.float32)
+LABEL_READ_1 = np.array([0, 0, 1], dtype=np.float32)
 
 map_label = {
     -1: LABEL_EMPTY,
