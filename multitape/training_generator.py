@@ -30,13 +30,10 @@ def predictions_to_labels(predicted_indices):
     predicted_indices = np.atleast_1d(predicted_indices)
 
     # Those indices map to label keys -1, 0, 1 in map_label
+    # A lookup table in np array is faster than python dictionary lookup
     lookup_table = np.array([map_label[-1], map_label[0], map_label[1]])
 
-    # Initialized, untrained model tends to output numbers other than 0, 1, and 2
-    # np.clip forces the indices to be inside the range
-    safe_indices = np.clip(predicted_indices, 0, 2)
-
-    return lookup_table[safe_indices]
+    return lookup_table[predicted_indices]
 
 
 ALL_COMMANDS = [WRITE_0, WRITE_1, READ, MOVE_LEFT, MOVE_RIGHT, NOP]
