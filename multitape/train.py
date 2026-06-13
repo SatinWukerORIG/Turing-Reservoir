@@ -5,14 +5,15 @@ import numpy as np
 import training_generator
 
 MODEL_DIR = "saved_reservoir"
+TRAIN_FROM_SAVED_WEIGHTS = True
 
 class Reservoir:
 
     def __init__(
         self,
         input_size=5,
-        reservoir_size=100,
-        spectral_radius=0.9,
+        reservoir_size=2000,
+        spectral_radius=0.95,
         input_scale=1.0,
     ):
 
@@ -117,7 +118,12 @@ def predict_sequence(reservoir, commands, Wout):
 
 if __name__ == "__main__":
     train_commands, train_labels = training_generator.load_data(5000, min_length=2, max_length=10)
+
     reservoir = Reservoir()
+
+    if TRAIN_FROM_SAVED_WEIGHTS:
+        reservoir.load_weights(MODEL_DIR)
+
 
     X_train, Y_train = extract_examples(reservoir, train_commands, train_labels)
 
@@ -127,15 +133,10 @@ if __name__ == "__main__":
 
     predictions = predict(X_train, Wout)
 
-    # What does it do?
-    # accuracy = np.mean(predictions == Y_train)
-    # print("Accuracy:", accuracy)
-
     training_generator.get_accuracy(train_commands, train_labels, reservoir, Wout, debug=False)
 
 
     # Save the reservoir and readout weights after training
-
     os.makedirs(MODEL_DIR, exist_ok=True)
     np.save(os.path.join(MODEL_DIR, "Win.npy"), reservoir.Win)
     np.save(os.path.join(MODEL_DIR, "W.npy"), reservoir.W)

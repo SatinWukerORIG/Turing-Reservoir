@@ -23,7 +23,7 @@ MAP_LABEL = {
     1: LABEL_READ_1
 }
 
-ALL_COMMANDS = [WRITE_0, WRITE_1, READ, MOVE_LEFT, MOVE_RIGHT, NOP]
+ALL_COMMANDS = [WRITE_0, WRITE_1, READ, MOVE_LEFT, MOVE_RIGHT]
 
 
 def simulate_tape_command(cmd, tape, tape_idx) -> tuple[NDArray, int]:
@@ -68,8 +68,8 @@ def simulate_tape_command(cmd, tape, tape_idx) -> tuple[NDArray, int]:
 
         return LABEL_EMPTY, tape_idx
 
-    elif np.array_equal(cmd, NOP):
-        return LABEL_EMPTY, tape_idx
+    # elif np.array_equal(cmd, NOP):
+    #     return LABEL_EMPTY, tape_idx
 
     raise ValueError("Unknown command vector")
 
