@@ -1,56 +1,91 @@
 # Turing Reservoir
 
-This repository contains a simple reservoir computing setup for a command/label prediction task.
+This repository contains reservoir computing experiments for simulating Turing machines. Two variants explore different levels of complexity:
 
-## Files
+- **single_tape/**: A basic single-tape Turing machine with WRITE_0, WRITE_1, and READ commands.
+- **multitape/**: An extended multi-tape Turing machine with MOVE_LEFT and MOVE_RIGHT commands for tape head navigation.
 
-- `main.py`: Training script.
-- `test.py`: Testing script.
-- `training_generator.py`: Data generation module and helper functions.
-- `saved_reservoir/`: Directory where trained weight files are stored.
+## Directory Structure
 
-## Overview
+```
+.
+├── single_tape/
+│   ├── train.py
+│   ├── test.py
+│   ├── training_generator.py
+│   └── saved_reservoir/          # Trained weights
+├── multitape/
+│   ├── train.py
+│   ├── test.py
+│   ├── test_training_generator.py
+│   ├── training_generator.py
+│   └── saved_reservoir/          # Trained weights
+├── LICENSE
+└── README.md
+```
 
-- `main.py` trains a reservoir model using generated sequences of commands.
-- `test.py` loads the trained reservoir and readout weights, generates new test data, and evaluates model accuracy.
-- `training_generator.py` creates command sequences, label sequences, and includes helper utilities for debugging and accuracy measurement.
+## Common Pattern
 
-## What `main.py` does
+Both `single_tape/` and `multitape/` follow the same workflow:
 
-`main.py` is the training entry point. It:
+### `train.py`
+
+Training entry point. It:
 
 1. Generates training data with `training_generator.load_data()`.
 2. Initializes a `Reservoir` with random input and recurrent weights.
-3. Runs training sequences through the reservoir to collect reservoir states.
-4. Trains a linear readout weight matrix `Wout` using least squares regression.
-5. Computes training accuracy via `training_generator.get_accuracy()`.
-6. Saves the trained weights to `saved_reservoir/`:
-   - `Win.npy`
-   - `W.npy`
-   - `Wout.npy`
+3. Optionally loads pre-trained weights if `TRAIN_FROM_SAVED_WEIGHTS` is True.
+4. Runs command sequences through the reservoir to collect states.
+5. Trains a linear readout weight matrix `Wout` using least squares regression.
+6. Computes training accuracy.
+7. Saves trained weights to `saved_reservoir/`:
+   - `Win.npy` (input-to-reservoir weights)
+   - `W.npy` (recurrent weights)
+   - `Wout.npy` (readout weights)
 
-## What `test.py` does
+### `test.py`
 
-`test.py` is the evaluation entry point. It:
+Testing entry point. It:
 
 1. Generates new test data with `training_generator.load_data()`.
-2. Loads the saved reservoir weights from `saved_reservoir/`.
-3. Uses the loaded reservoir and readout weights to run the test sequences.
-4. Computes and prints accuracy using `training_generator.get_accuracy()`.
+2. Loads saved reservoir and readout weights.
+3. Evaluates accuracy on test data using `training_generator.get_accuracy()`.
+4. When `debug=True`, prints sequences where predictions don't match true labels.
 
-When `debug=True`, `test.py` also prints sequences where the model prediction does not exactly match the true labels. This helps identify failure cases.
+### `training_generator.py`
 
-## What `training_generator.py` does
+Data generation and helper module providing:
 
-`training_generator.py` is the data generator and helper module. It provides:
+- **Single-tape version:**
+  - `generate_sequence()`: Create random command sequences (WRITE_0, WRITE_1, READ, NOP).
+  - `load_data()`: Generate multiple training/test sequences.
+  - `get_accuracy()`: Evaluate accuracy with optional debug output.
 
-- `generate_sequence()`: construct random command sequences with writes, reads, and no-ops.
-- `load_data()`: generate many sequences for training or testing.
-- `command_to_word()` / `commands_to_words()`: convert commands to readable names.
-- `predictions_to_labels()`: convert predicted label indices into one-hot label vectors.
-- `get_accuracy()`: run sequences through the reservoir and compute overall accuracy, with optional debug output.
+- **Multi-tape version:**
+  - `simulate_tape_command()`: Simulate Turing machine operations on a tape with head position tracking.
+  - `generate_sequence()`: Create random command sequences (WRITE_0, WRITE_1, READ, MOVE_LEFT, MOVE_RIGHT).
+  - `load_data()`: Generate multiple training/test sequences.
+  - `get_accuracy()`: Evaluate accuracy with optional debug output.
 
-It also defines the command and label encodings used by the model.
+## Single-Tape Variant
+
+Commands are 3-dimensional:
+- `WRITE_0`: Write 0 to the tape
+- `WRITE_1`: Write 1 to the tape
+- `READ`: Read the current tape value
+
+The tape is a single value (0 or 1) that can be updated by WRITE commands. READ outputs the current value.
+
+## Multi-Tape Variant
+
+Commands are 5-dimensional:
+- `WRITE_0`: Write 0 to current tape position
+- `WRITE_1`: Write 1 to current tape position
+- `READ`: Read the current tape position
+- `MOVE_LEFT`: Move tape head left (extends tape if needed)
+- `MOVE_RIGHT`: Move tape head right (extends tape if needed)
+
+The tape is a list of bits with a head pointer. MOVE commands can extend the tape dynamically.
 
 ## Running
 
@@ -60,10 +95,18 @@ It also defines the command and label encodings used by the model.
 pip install numpy
 ```
 
-2. Train the model:
+2. Train the model (choose variant):
 
 ```bash
-python main.py
+cd single_tape
+python train.py
+```
+
+or
+
+```bash
+cd multitape
+python train.py
 ```
 
 3. Test the model:
@@ -72,8 +115,11 @@ python main.py
 python test.py
 ```
 
-## Notes
+Set `debug=True` in `test.py` to see failure cases.
 
-- The model uses reservoir computing with a fixed recurrent layer and a trained readout.
-- `main.py` saves weights so `test.py` can evaluate the same trained model.
-- `training_generator.py` ensures each sequence contains at least one `READ` command and computes labels based on the current tape value.
+## Technical Details
+
+- **Reservoir computing**: The recurrent layer is randomly initialized and fixed. Only the readout weights are trained.
+- **Spectral radius**: Recurrent weights are scaled to control stability (0.9 for single-tape, 0.95 for multi-tape).
+- **Training**: Linear readout weights are solved using least squares regression on collected reservoir states.
+- **Supervision**: Labels are one-hot vectors indicating the output of READ operations or "empty" for write/move operations.
